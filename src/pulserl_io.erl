@@ -114,12 +114,12 @@ decode_metadata(HeadersAndPayload) ->
       uncompress(MetaData, Payload)
   end.
 
-% uncompress(MetaData, Payload) ->
-%   {MetaData, Payload}.
 uncompress(#'MessageMetadata'{compression = 'ZLIB'} = MetaData, Payload) ->
-  io:format("~p~n", [Payload]),
-  io:format("~p~n", [MetaData]),
-  {MetaData, zlib:uncompress(Payload)};
+  Z = zlib:open(),
+  ok = zlib:inflateInit(Z),
+  [UnzippedPayload] = zlib:inflate(Z, Payload),
+  zlib:close(Z),
+  {MetaData, UnzippedPayload};
 
 uncompress(#'MessageMetadata'{compression = 'NONE'} = MetaData, Payload) ->
   {MetaData, Payload};
@@ -127,7 +127,6 @@ uncompress(#'MessageMetadata'{compression = 'NONE'} = MetaData, Payload) ->
 uncompress(_MetaData, _Payload) ->
   {error, unsupported_compression}.
   
-
 verify_checksum(HeadersAndPayload) ->
   case has_checksum(HeadersAndPayload) of
     true ->
