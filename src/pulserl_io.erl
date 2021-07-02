@@ -110,8 +110,23 @@ decode_metadata(HeadersAndPayload) ->
             HeadersAndPayload
         end,
       <<Metadata:MetadataSize/binary, Payload/binary>> = MetadataPayload,
-      {pulsar_api:decode_msg(Metadata, 'MessageMetadata'), Payload}
+      MetaData = pulsar_api:decode_msg(Metadata, 'MessageMetadata'),
+      uncompress(MetaData, Payload)
   end.
+
+% uncompress(MetaData, Payload) ->
+%   {MetaData, Payload}.
+uncompress(#'MessageMetadata'{compression = 'ZLIB'} = MetaData, Payload) ->
+  io:format("~p~n", [Payload]),
+  io:format("~p~n", [MetaData]),
+  {MetaData, zlib:uncompress(Payload)};
+
+uncompress(#'MessageMetadata'{compression = 'NONE'} = MetaData, Payload) ->
+  {MetaData, Payload};
+
+uncompress(_MetaData, _Payload) ->
+  {error, unsupported_compression}.
+  
 
 verify_checksum(HeadersAndPayload) ->
   case has_checksum(HeadersAndPayload) of

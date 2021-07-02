@@ -381,8 +381,11 @@ handle_info({new_message, MsgId, RedeliveryCount, HeadersAndPayload},
       {MetadataAndMessages, State2} =
         case commands:has_messages_in_batch(Metadata) of
           false ->
+            io:format("~p~n", [Metadata]),
+            io:format("~p~n", ["single message"]),
             {[{Metadata, pulserl_utils:new_message(Topic, MessageId, Metadata, Payload, RedeliveryCount)}], State};
           _ ->
+            io:format("~p~n", ["batch message"]),
             SingleMetaAndPayloads = payload_to_messages(Metadata, Payload),
             BatchSize = length(SingleMetaAndPayloads),
             LastBatchIndex = BatchSize - 1,
@@ -848,6 +851,8 @@ payload_to_messages(_Metadata, <<>>, Acc) ->
 
 payload_to_messages(Metadata, Data, Acc) ->
   {SingleMetadataSize, Rest} = pulserl_io:read_int32(Data),
+  io:format("~p~n", [SingleMetadataSize]),
+  io:format("~p~n", [Rest]),
   <<SingleMetadataBytes:SingleMetadataSize/binary, RestOfData/binary>> = Rest,
   SingleMetadata = pulsar_api:decode_msg(SingleMetadataBytes, 'SingleMessageMetadata'),
   {PayloadData, RestOfData2} = read_payload_data(SingleMetadata, RestOfData),
